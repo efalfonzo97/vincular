@@ -1293,6 +1293,7 @@ const normSol = r => ({id:r.id,turnoId:r.turno_id,profesional:r.profesional,paci
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function fmt(d){return d.toISOString().split('T')[0];}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function initials(n){return n.split(' ').filter(Boolean).map(w=>w[0]).join('').substring(0,2).toUpperCase();}
 function fmtDate(s){const[y,m,d]=s.split('-');const mm=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];return `${parseInt(d)} ${mm[parseInt(m)-1]} ${y}`;}
 function stLabel(e){return{confirmado:'Confirmado',pendiente:'Pendiente',pendiente_confirmar:'Pend. confirmar',reprogramado:'Reprogramado',cancelado:'Cancelado'}[e]||e;}
@@ -1302,8 +1303,8 @@ function avPal(n){return AV_PALETTES[n.charCodeAt(0)%AV_PALETTES.length];}
 function avUrl(n){return PACIENTES.find(x=>x.nombre===n)?.avatarUrl||PROFESIONALES.find(x=>x.nombre===n)?.avatarUrl||'';}
 function avDiv(n,sz=44,fs=14){
   const url=avUrl(n);const p=avPal(n);
-  if(url)return `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${p.bg} url('${url}') center/cover;flex-shrink:0;border:2px solid ${p.bg};"></div>`;
-  return `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${p.bg};color:${p.tx};display:flex;align-items:center;justify-content:center;font-size:${fs}px;font-weight:700;flex-shrink:0;">${initials(n)}</div>`;
+  if(url)return `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${p.bg} url('${esc(url)}') center/cover;flex-shrink:0;border:2px solid ${p.bg};"></div>`;
+  return `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${p.bg};color:${p.tx};display:flex;align-items:center;justify-content:center;font-size:${fs}px;font-weight:700;flex-shrink:0;">${esc(initials(n))}</div>`;
 }
 function previewAvatar(input,previewId,name=''){
   if(!input.files||!input.files[0])return;
@@ -1653,7 +1654,7 @@ function renderNotifStrip(){
     <div class="notif-item" onclick="markRead('${n.id}');renderNotifStrip()" style="cursor:pointer;${n.leida?'opacity:.6':''}">
       <div class="notif-dot ${n.leida?'':'info'}" style="${n.leida?'background:var(--text-muted)':''}"></div>
       <div class="notif-txt">
-        <div class="notif-msg">${n.mensaje}</div>
+        <div class="notif-msg">${esc(n.mensaje)}</div>
         <div class="notif-meta">${timeAgo(n.created_at)}</div>
       </div>
     </div>`).join('');
@@ -1900,6 +1901,7 @@ function pickDrop(type,id){
     document.getElementById('fProInput').value=p.nombre;
     document.getElementById('fProList').classList.remove('open');
     if(!document.getElementById('fI').value)document.getElementById('fI').value=p.tarifa;
+    buildTimePicker(document.getElementById('fH').value);
   }
 }
 document.addEventListener('click',e=>{
@@ -2513,7 +2515,7 @@ function renderNotifPanel(){
   if(!NOTIFICACIONES.length){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">Sin notificaciones</div>';return;}
   el.innerHTML=NOTIFICACIONES.map(n=>`
     <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:${n.leida?'#fff':'var(--primary-xlight)'};cursor:pointer" onclick="markRead('${n.id}')">
-      <div style="font-size:12.5px;font-weight:${n.leida?400:600};color:var(--text-primary);line-height:1.4">${n.mensaje}</div>
+      <div style="font-size:12.5px;font-weight:${n.leida?400:600};color:var(--text-primary);line-height:1.4">${esc(n.mensaje)}</div>
       <div style="font-size:10.5px;color:var(--text-muted);margin-top:3px">${new Date(n.created_at).toLocaleString('es-AR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
     </div>`).join('');
 }
@@ -2818,14 +2820,14 @@ async function renderSolicitudesPublicas(){
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:10px">
           ${avDiv(nombreCompleto,34,11)}
-          <div><div style="font-size:13.5px;font-weight:600;color:var(--text-primary)">${nombreCompleto} <span style="font-weight:400;color:var(--text-muted)">· ${s.edad||'—'} años</span></div>
-          <div style="font-size:11.5px;color:var(--text-secondary)">${s.dia_preferido||'—'} ${s.hora_preferido||''} · ${s.modalidad||''} · ${s.frecuencia||''}</div></div>
+          <div><div style="font-size:13.5px;font-weight:600;color:var(--text-primary)">${esc(nombreCompleto)} <span style="font-weight:400;color:var(--text-muted)">· ${esc(s.edad||'—')} años</span></div>
+          <div style="font-size:11.5px;color:var(--text-secondary)">${esc(s.dia_preferido||'—')} ${esc(s.hora_preferido||'')} · ${esc(s.modalidad||'')} · ${esc(s.frecuencia||'')}</div></div>
         </div>
         <span style="background:${st.bg};color:${st.tx};font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:20px;flex-shrink:0">${st.lbl}</span>
       </div>
       <div style="background:var(--primary-xlight);border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--text-secondary);margin-bottom:12px">
-        <div><b>WhatsApp:</b> ${s.whatsapp}${s.ya_hizo_terapia?' · Ya hizo terapia antes':''}</div>
-        ${s.motivo?`<div style="margin-top:4px"><b>Motivo:</b> ${s.motivo}</div>`:''}
+        <div><b>WhatsApp:</b> ${esc(s.whatsapp)}${s.ya_hizo_terapia?' · Ya hizo terapia antes':''}</div>
+        ${s.motivo?`<div style="margin-top:4px"><b>Motivo:</b> ${esc(s.motivo)}</div>`:''}
       </div>
       ${s.estado==='descartado'?'':`
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -2874,9 +2876,9 @@ async function renderSolicitudes(){
     const cambiosHtml=Object.entries(s.cambios).map(([k,v])=>`
       <div style="display:flex;gap:8px;font-size:12px">
         <span style="color:var(--text-muted);text-transform:capitalize;min-width:50px">${k}:</span>
-        <span style="color:var(--text-secondary);text-decoration:line-through">${s.datosOriginales[k]||'—'}</span>
+        <span style="color:var(--text-secondary);text-decoration:line-through">${esc(s.datosOriginales[k]||'—')}</span>
         <span>→</span>
-        <span style="color:var(--text-primary);font-weight:600">${v}</span>
+        <span style="color:var(--text-primary);font-weight:600">${esc(v)}</span>
       </div>`).join('');
     const st=stSol[s.estado]||stSol.pendiente;
     return `<div style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:18px;margin-bottom:10px">
@@ -2892,7 +2894,7 @@ async function renderSolicitudes(){
         </div>
       </div>
       <div style="background:var(--primary-xlight);border-radius:8px;padding:10px 12px;margin-bottom:${s.estado==='pendiente'?12:0}px;display:flex;flex-direction:column;gap:5px">${cambiosHtml}</div>
-      ${s.notaAdmin?`<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:${s.estado==='pendiente'?12:0}px">📝 ${s.notaAdmin}</div>`:''}
+      ${s.notaAdmin?`<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:${s.estado==='pendiente'?12:0}px">📝 ${esc(s.notaAdmin)}</div>`:''}
       ${s.estado==='pendiente'?`<div style="display:flex;gap:8px">
         <button class="btn btn-primary btn-sm" onclick="approveSolicitud('${s.id}')">✓ Aprobar</button>
         <button class="btn btn-danger btn-sm" onclick="rejectSolicitud('${s.id}')">✕ Rechazar</button>
@@ -2907,8 +2909,9 @@ async function renderSolicitudes(){
 
 // ─── TIME PICKER ─────────────────────────────────────────────────────────────
 const TURNO_DUR=40;
-function getOcupados(fecha,excludeId){
-  return TURNOS.filter(t=>t.fecha===fecha&&t.id!==excludeId&&t.estado!=='cancelado').map(t=>{
+function getOcupados(fecha,excludeId,profesional){
+  // Solo cuentan los turnos del profesional elegido: en un centro con varios licenciados cada uno tiene su propia agenda
+  return TURNOS.filter(t=>t.fecha===fecha&&t.id!==excludeId&&t.estado!=='cancelado'&&(!profesional||t.profesional===profesional)).map(t=>{
     const p=t.hora.replace('hs','').replace('h','').trim().split(':');
     return parseInt(p[0])*60+(parseInt(p[1])||0);
   }).filter(m=>!isNaN(m));
@@ -2979,7 +2982,8 @@ async function toggleDiaBloqueado(fechaStr){
 let _pickerH=null;
 function buildTimePicker(preselect){
   const fecha=document.getElementById('fF').value;
-  const ocup=getOcupados(fecha,editTurnoId);
+  const profesional=document.getElementById('fProInput').value.trim();
+  const ocup=getOcupados(fecha,editTurnoId,profesional);
   _pickerH=null;
   document.getElementById('fH').value='';
   document.getElementById('minuteRow').style.display='none';
@@ -3179,7 +3183,7 @@ async function renderPanelControl(){
         </div>
       </div>
       <div style="font-size:12.5px;color:var(--text-secondary);background:var(--primary-xlight);border-radius:6px;padding:8px 10px;margin-bottom:${s.estado==='pendiente'?10:0}px">
-        ${Object.entries(s.datos||{}).map(([k,v])=>`<div><strong>${k}:</strong> ${v}</div>`).join('')}
+        ${Object.entries(s.datos||{}).map(([k,v])=>`<div><strong>${esc(k)}:</strong> ${esc(v)}</div>`).join('')}
       </div>
       ${s.estado==='pendiente'?`<div style="display:flex;gap:8px">
         <button class="btn btn-primary btn-sm" onclick="aprobarSolAdmin('${s.id}')">✓ Aprobar</button>
